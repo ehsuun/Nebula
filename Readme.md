@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="nebula.png" alt="Nebula Logo">
+  <img src="nebula.png" alt="Nebula Logo" width="200px">
 </p>
 
 # Nebula
