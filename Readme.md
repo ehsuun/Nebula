@@ -95,8 +95,4 @@ This project is licensed under the MIT License. See the `LICENSE.md` file for de
 
 ## Contact
 
-For any questions or feedback, please reach out to [Your Contact Info].
-
----
-
-This `README.md` provides a clear overview of the **Nebula** project, how to install and use it, and how to contribute. Let me know if you'd like to add more specifics or adjust anything!
+For any questions or feedback, please reach out to @ehsuun.
