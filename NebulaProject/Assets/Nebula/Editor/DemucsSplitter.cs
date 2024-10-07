@@ -23,7 +23,7 @@ namespace Nebula.Editor{
         private float drumStemOffset = 0f;
         private bool stemFilesAligned = false;
 
-        [MenuItem("Tools/Demucs Splitter")]
+        [MenuItem("Tools/Nebula/Demucs Splitter")]
         public static void ShowWindow()
         {
             GetWindow<DemucsSplitterWindow>("Demucs Splitter");

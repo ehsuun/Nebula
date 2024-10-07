@@ -98,6 +98,25 @@ namespace Nebula
 
         [SerializeField] private AudioMixerGroup muteMixerGroup;
 
+        public float currentBPM = 120f;
+        private float bpmConfidence = 0f;
+        private float lastPeakTime = 0f;
+        private List<float> peakIntervals = new List<float>();
+        private float analysisInterval = 5f;
+        private float lastAnalysisTime = 0f;
+
+        private const float MIN_PEAK_INTERVAL = 0.3f; // 200 BPM
+        private const float MAX_PEAK_INTERVAL = 1f; // 60 BPM
+        private const float CONFIDENCE_THRESHOLD = 0.8f;
+        private const int MIN_PEAKS_FOR_ANALYSIS = 8;
+
+        private float peakThreshold = 0.5f; // Adjust this value based on your audio
+        private float minPeakDistance = 0.2f; // Minimum time between peaks in seconds
+
+        private float adaptiveThreshold = 0.5f;
+        private const float THRESHOLD_DECAY = 0.95f;
+        private const float THRESHOLD_FACTOR = 1.5f;
+
         private void Reset()
         {
             EnsureAudioSourcesExist();
@@ -202,6 +221,8 @@ namespace Nebula
                 UpdateIntensities();
                 DetectKick();
                 DetectBeat();
+                DetectDrumPeaks();
+                UpdateBPM();
             }
         }
 
@@ -778,6 +799,57 @@ namespace Nebula
             {
                 source.outputAudioMixerGroup = mixerGroup;
             }
+        }
+
+        private void DetectDrumPeaks()
+        {
+            float currentTime = Time.time;
+            float drumBassIntensity = stemBassIntensities[(int)StemType.Drums];  // This is correct now
+
+            // Update adaptive threshold
+            adaptiveThreshold = Mathf.Max(drumBassIntensity, adaptiveThreshold * THRESHOLD_DECAY);
+
+            if (IsDrumPeak(drumBassIntensity) && (currentTime - lastPeakTime) >= minPeakDistance)
+            {
+                float interval = currentTime - lastPeakTime;
+                if (interval >= MIN_PEAK_INTERVAL && interval <= MAX_PEAK_INTERVAL)
+                {
+                    peakIntervals.Add(interval);
+                    Debug.Log($"Peak detected. Intensity: {drumBassIntensity}, Threshold: {adaptiveThreshold}, Interval: {interval}");
+                }
+                lastPeakTime = currentTime;
+            }
+        }
+
+        private void UpdateBPM()
+        {
+            if (Time.time - lastAnalysisTime < analysisInterval) return;
+
+            if (peakIntervals.Count >= MIN_PEAKS_FOR_ANALYSIS)
+            {
+                // Remove outliers (intervals that are too short or too long)
+                peakIntervals.Sort();
+                int removeCount = Mathf.FloorToInt(peakIntervals.Count * 0.1f); // Remove 10% from each end
+                peakIntervals.RemoveRange(0, removeCount);
+                peakIntervals.RemoveRange(peakIntervals.Count - removeCount, removeCount);
+
+                float averageInterval = peakIntervals.Average();
+                float newBPM = 60f / averageInterval;
+
+                // Smooth the BPM change
+                currentBPM = Mathf.Lerp(currentBPM, newBPM, 0.2f);
+
+                Debug.Log($"BPM updated: {currentBPM}, Based on {peakIntervals.Count} intervals");
+
+                peakIntervals.Clear();
+            }
+
+            lastAnalysisTime = Time.time;
+        }
+
+        private bool IsDrumPeak(float intensity)
+        {
+            return intensity > adaptiveThreshold * THRESHOLD_FACTOR;
         }
     }
 }
